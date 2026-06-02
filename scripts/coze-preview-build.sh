@@ -6,3 +6,4 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 
 pnpm install
+pnpm run build
