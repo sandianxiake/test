@@ -9,8 +9,8 @@
 
 ## 目录结构
 ```
-test/
-├── .coze                          # 子项目配置
+/workspace/projects/
+├── .coze                          # 项目配置
 ├── scripts/
 │   ├── coze-preview-build.sh      # 预览构建脚本
 │   └── coze-preview-run.sh        # 预览运行脚本
@@ -24,7 +24,7 @@ test/
 
 ## 核心功能
 - 左侧目录（固定 200px）点击 → 右侧滚动定位
-- 右侧滚动 → 左侧高亮当前项并自动滚动（Intersection Observer）
+- 右侧滚动 → 左侧高亮当前项并自动滚动
 - 滚动到底部自动停止
 
 ## 运行

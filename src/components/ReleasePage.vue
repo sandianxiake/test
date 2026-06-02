@@ -326,15 +326,6 @@ const scrollToRelease = (id) => {
   }
 }
 
-// 滚动到顶部
-const scrollToTop = () => {
-  const firstEl = document.getElementById(releases.value[0].id)
-  if (firstEl) {
-    firstEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    activeId.value = releases.value[0].id
-  }
-}
-
 // 初始化 Intersection Observer
 const initObserver = () => {
   const options = {
@@ -344,17 +335,14 @@ const initObserver = () => {
   }
 
   observer = new IntersectionObserver((entries) => {
-    // 找出所有可见的元素
     const visibleEntries = entries.filter(entry => entry.isIntersecting)
     
     if (visibleEntries.length > 0) {
-      // 选择可见区域中最高（数值最小）的元素
       const topEntry = visibleEntries.reduce((prev, current) => {
         return prev.boundingClientRect.top < current.boundingClientRect.top ? prev : current
       })
       activeId.value = topEntry.target.id
       
-      // 同步左侧导航滚动
       nextTick(() => {
         const navItem = navRef.value?.querySelector(`[data-id="${topEntry.target.id}"]`)
         if (navItem) {
@@ -364,30 +352,15 @@ const initObserver = () => {
     }
   }, options)
 
-  // 观察所有发版项
   releases.value.forEach(release => {
     const el = document.getElementById(release.id)
     if (el) observer.observe(el)
   })
 }
 
-// 监听滚动到底部
-const handleScroll = () => {
-  if (!contentRef.value) return
-  const { scrollTop, scrollHeight, clientHeight } = contentRef.value
-  
-  // 滚动到底部附近时，停止滚动行为
-  if (scrollTop + clientHeight >= scrollHeight - 10) {
-    // 可以在这里做额外处理
-  }
-}
-
 onMounted(() => {
   nextTick(() => {
     initObserver()
-    if (contentRef.value) {
-      contentRef.value.addEventListener('scroll', handleScroll)
-    }
   })
 })
 
@@ -395,15 +368,11 @@ onUnmounted(() => {
   if (observer) {
     observer.disconnect()
   }
-  if (contentRef.value) {
-    contentRef.value.removeEventListener('scroll', handleScroll)
-  }
 })
 </script>
 
 <template>
   <div class="release-page">
-    <!-- 标题 -->
     <header class="page-header">
       <h1>发版详情</h1>
     </header>
@@ -481,7 +450,6 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-/* 左侧导航 */
 .sidebar {
   width: 200px;
   flex-shrink: 0;
@@ -551,7 +519,6 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 右侧内容 */
 .content {
   flex: 1;
   overflow-y: auto;
@@ -629,7 +596,6 @@ onUnmounted(() => {
   margin: 12px 0;
 }
 
-/* 滚动条美化 */
 .content::-webkit-scrollbar,
 .nav-list::-webkit-scrollbar {
   width: 6px;

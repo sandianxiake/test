@@ -1,4 +1,6 @@
 [project]
+sub_id = "dd7bd44c"
+name = "release-detail"
 requires = ["nodejs-24"]
 project_type = "web"
 
@@ -6,8 +8,5 @@ project_type = "web"
 preview_enable = "enabled"
 
 [dev]
-build = ["bash", "test/scripts/coze-preview-build.sh"]
-run = ["bash", "test/scripts/coze-preview-run.sh"]
-
-[subprojects]
-path = ["test"]
+build = ["bash", "scripts/coze-preview-build.sh"]
+run = ["bash", "scripts/coze-preview-run.sh"]
