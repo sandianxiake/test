@@ -1,0 +1,13 @@
+[project]
+requires = ["nodejs-24"]
+project_type = "web"
+
+[preview]
+preview_enable = "enabled"
+
+[dev]
+build = ["bash", "test/scripts/coze-preview-build.sh"]
+run = ["bash", "test/scripts/coze-preview-run.sh"]
+
+[subprojects]
+path = ["test"]
