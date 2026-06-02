@@ -316,25 +316,48 @@ const activeId = ref('release-1')
 const contentRef = ref(null)
 const navRef = ref(null)
 let observer = null
+let scrollTimeout = null
+let isScrolling = false
 
 // 点击左侧导航
 const scrollToRelease = (id) => {
+  // 滚动锁定，防止 Observer 干扰
+  isScrolling = true
+  clearTimeout(scrollTimeout)
+  
   const targetEl = document.getElementById(id)
   if (targetEl) {
     targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
     activeId.value = id
   }
+  
+  // 滚动动画结束后解锁（smooth 滚动约 300-500ms）
+  scrollTimeout = setTimeout(() => {
+    isScrolling = false
+  }, 500)
+}
+
+// 监听滚动事件，用于检测手动滚动
+const handleScroll = () => {
+  isScrolling = true
+  clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    isScrolling = false
+  }, 150)
 }
 
 // 初始化 Intersection Observer
 const initObserver = () => {
   const options = {
     root: null,
-    rootMargin: '-20% 0px -60% 0px',
+    rootMargin: '-40% 0px -40% 0px',
     threshold: 0
   }
 
   observer = new IntersectionObserver((entries) => {
+    // 如果正在滚动，不更新高亮
+    if (isScrolling) return
+    
     const visibleEntries = entries.filter(entry => entry.isIntersecting)
     
     if (visibleEntries.length > 0) {
@@ -361,12 +384,19 @@ const initObserver = () => {
 onMounted(() => {
   nextTick(() => {
     initObserver()
+    if (contentRef.value) {
+      contentRef.value.addEventListener('scroll', handleScroll)
+    }
   })
 })
 
 onUnmounted(() => {
   if (observer) {
     observer.disconnect()
+  }
+  clearTimeout(scrollTimeout)
+  if (contentRef.value) {
+    contentRef.value.removeEventListener('scroll', handleScroll)
   }
 })
 </script>
