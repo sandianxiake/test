@@ -342,10 +342,12 @@ const updateActiveFromScroll = () => {
   const container = contentRef.value
   const containerTop = container.scrollTop
   const containerHeight = container.clientHeight
-  const viewCenter = containerTop + containerHeight * 0.4 // 视口中心偏上位置
+  const scrollHeight = container.scrollHeight
+  const isAtBottom = containerTop + containerHeight >= scrollHeight - 50
 
   let closestId = null
   let closestDistance = Infinity
+  let bottommostId = null
 
   releases.value.forEach(release => {
     const el = document.getElementById(release.id)
@@ -357,15 +359,28 @@ const updateActiveFromScroll = () => {
 
     // 检查元素是否在可见区域内
     if (elBottom > containerTop && elTop < containerTop + containerHeight) {
-      // 计算元素中心与视口中心的距离
-      const distance = Math.abs(viewCenter - elCenter)
-      
-      if (distance < closestDistance) {
-        closestDistance = distance
-        closestId = release.id
+      // 记录最底部的可见元素
+      if (!bottommostId || elBottom > document.getElementById(bottommostId)?.offsetTop) {
+        bottommostId = release.id
+      }
+
+      if (!isAtBottom) {
+        // 非底部时，用视口中心距离判断
+        const viewCenter = containerTop + containerHeight * 0.4
+        const distance = Math.abs(viewCenter - elCenter)
+        
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closestId = release.id
+        }
       }
     }
   })
+
+  // 滚动到底部时，选择最底部的可见元素
+  if (isAtBottom && bottommostId) {
+    closestId = bottommostId
+  }
 
   if (closestId && closestId !== activeId.value) {
     activeId.value = closestId
