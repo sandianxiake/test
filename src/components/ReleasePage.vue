@@ -316,14 +316,14 @@ const activeId = ref('release-1')
 const contentRef = ref(null)
 const navRef = ref(null)
 let observer = null
-let scrollTimeout = null
-let isScrolling = false
+let clickTimeout = null
+let isClickScrolling = false
 
 // 点击左侧导航
 const scrollToRelease = (id) => {
-  // 滚动锁定，防止 Observer 干扰
-  isScrolling = true
-  clearTimeout(scrollTimeout)
+  // 锁定 Observer，防止点击时的滚动触发高亮更新
+  isClickScrolling = true
+  clearTimeout(clickTimeout)
   
   const targetEl = document.getElementById(id)
   if (targetEl) {
@@ -331,48 +331,36 @@ const scrollToRelease = (id) => {
     activeId.value = id
   }
   
-  // 滚动动画结束后解锁（smooth 滚动约 300-500ms）
-  scrollTimeout = setTimeout(() => {
-    isScrolling = false
+  // 滚动动画结束后解锁
+  clickTimeout = setTimeout(() => {
+    isClickScrolling = false
   }, 500)
-}
-
-// 监听滚动事件，用于检测手动滚动
-const handleScroll = () => {
-  isScrolling = true
-  clearTimeout(scrollTimeout)
-  scrollTimeout = setTimeout(() => {
-    isScrolling = false
-  }, 150)
 }
 
 // 初始化 Intersection Observer
 const initObserver = () => {
   const options = {
-    root: null,
-    rootMargin: '-40% 0px -40% 0px',
+    root: contentRef.value, // 使用右侧滚动容器作为根
+    rootMargin: '0px 0px -50% 0px',
     threshold: 0
   }
 
   observer = new IntersectionObserver((entries) => {
-    // 如果正在滚动，不更新高亮
-    if (isScrolling) return
+    // 如果是点击触发的滚动，不处理
+    if (isClickScrolling) return
     
-    const visibleEntries = entries.filter(entry => entry.isIntersecting)
-    
-    if (visibleEntries.length > 0) {
-      const topEntry = visibleEntries.reduce((prev, current) => {
-        return prev.boundingClientRect.top < current.boundingClientRect.top ? prev : current
-      })
-      activeId.value = topEntry.target.id
-      
-      nextTick(() => {
-        const navItem = navRef.value?.querySelector(`[data-id="${topEntry.target.id}"]`)
-        if (navItem) {
-          navItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-        }
-      })
-    }
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        activeId.value = entry.target.id
+        
+        nextTick(() => {
+          const navItem = navRef.value?.querySelector(`[data-id="${entry.target.id}"]`)
+          if (navItem) {
+            navItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }
+        })
+      }
+    })
   }, options)
 
   releases.value.forEach(release => {
@@ -384,9 +372,6 @@ const initObserver = () => {
 onMounted(() => {
   nextTick(() => {
     initObserver()
-    if (contentRef.value) {
-      contentRef.value.addEventListener('scroll', handleScroll)
-    }
   })
 })
 
@@ -394,10 +379,7 @@ onUnmounted(() => {
   if (observer) {
     observer.disconnect()
   }
-  clearTimeout(scrollTimeout)
-  if (contentRef.value) {
-    contentRef.value.removeEventListener('scroll', handleScroll)
-  }
+  clearTimeout(clickTimeout)
 })
 </script>
 
