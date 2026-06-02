@@ -315,15 +315,13 @@ const releases = ref([
 const activeId = ref('release-1')
 const contentRef = ref(null)
 const navRef = ref(null)
-let observer = null
-let clickTimeout = null
+let scrollTimeout = null
 let isClickScrolling = false
 
 // 点击左侧导航
 const scrollToRelease = (id) => {
-  // 锁定 Observer，防止点击时的滚动触发高亮更新
   isClickScrolling = true
-  clearTimeout(clickTimeout)
+  clearTimeout(scrollTimeout)
   
   const targetEl = document.getElementById(id)
   if (targetEl) {
@@ -332,54 +330,79 @@ const scrollToRelease = (id) => {
   }
   
   // 滚动动画结束后解锁
-  clickTimeout = setTimeout(() => {
+  scrollTimeout = setTimeout(() => {
     isClickScrolling = false
-  }, 500)
+  }, 600)
 }
 
-// 初始化 Intersection Observer
-const initObserver = () => {
-  const options = {
-    root: contentRef.value, // 使用右侧滚动容器作为根
-    rootMargin: '0px 0px -50% 0px',
-    threshold: 0
-  }
+// 基于滚动位置检测当前可见区域的元素
+const updateActiveFromScroll = () => {
+  if (!contentRef.value) return
+  
+  const container = contentRef.value
+  const containerTop = container.scrollTop
+  const containerHeight = container.clientHeight
+  const viewCenter = containerTop + containerHeight * 0.4 // 视口中心偏上位置
 
-  observer = new IntersectionObserver((entries) => {
-    // 如果是点击触发的滚动，不处理
-    if (isClickScrolling) return
-    
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        activeId.value = entry.target.id
-        
-        nextTick(() => {
-          const navItem = navRef.value?.querySelector(`[data-id="${entry.target.id}"]`)
-          if (navItem) {
-            navItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-          }
-        })
-      }
-    })
-  }, options)
+  let closestId = null
+  let closestDistance = Infinity
 
   releases.value.forEach(release => {
     const el = document.getElementById(release.id)
-    if (el) observer.observe(el)
+    if (!el) return
+
+    const elTop = el.offsetTop - container.offsetTop
+    const elBottom = elTop + el.offsetHeight
+    const elCenter = elTop + el.offsetHeight / 2
+
+    // 检查元素是否在可见区域内
+    if (elBottom > containerTop && elTop < containerTop + containerHeight) {
+      // 计算元素中心与视口中心的距离
+      const distance = Math.abs(viewCenter - elCenter)
+      
+      if (distance < closestDistance) {
+        closestDistance = distance
+        closestId = release.id
+      }
+    }
   })
+
+  if (closestId && closestId !== activeId.value) {
+    activeId.value = closestId
+    
+    nextTick(() => {
+      const navItem = navRef.value?.querySelector(`[data-id="${closestId}"]`)
+      if (navItem) {
+        navItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    })
+  }
+}
+
+// 监听滚动事件
+const handleScroll = () => {
+  if (isClickScrolling) return
+  
+  clearTimeout(scrollTimeout)
+  scrollTimeout = setTimeout(() => {
+    updateActiveFromScroll()
+  }, 50)
 }
 
 onMounted(() => {
   nextTick(() => {
-    initObserver()
+    if (contentRef.value) {
+      contentRef.value.addEventListener('scroll', handleScroll)
+    }
+    updateActiveFromScroll()
   })
 })
 
 onUnmounted(() => {
-  if (observer) {
-    observer.disconnect()
+  clearTimeout(scrollTimeout)
+  if (contentRef.value) {
+    contentRef.value.removeEventListener('scroll', handleScroll)
   }
-  clearTimeout(clickTimeout)
 })
 </script>
 
