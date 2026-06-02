@@ -317,10 +317,12 @@ const contentRef = ref(null)
 const navRef = ref(null)
 let scrollTimeout = null
 let isClickScrolling = false
+let clickedId = null
 
 // 点击左侧导航
 const scrollToRelease = (id) => {
   isClickScrolling = true
+  clickedId = id
   clearTimeout(scrollTimeout)
   
   const targetEl = document.getElementById(id)
@@ -329,10 +331,34 @@ const scrollToRelease = (id) => {
     activeId.value = id
   }
   
-  // 滚动动画结束后解锁
+  // 滚动动画结束后解锁，并验证目标位置
   scrollTimeout = setTimeout(() => {
     isClickScrolling = false
-  }, 600)
+    // 锁定结束后，验证点击的目标是否在正确位置
+    verifyClickTarget()
+  }, 800)
+}
+
+// 验证点击目标是否在正确位置
+const verifyClickTarget = () => {
+  if (!clickedId || !contentRef.value) return
+  
+  const container = contentRef.value
+  const targetEl = document.getElementById(clickedId)
+  if (!targetEl) return
+  
+  const elTop = targetEl.offsetTop - container.offsetTop
+  const elBottom = elTop + targetEl.offsetHeight
+  
+  // 检查目标元素是否在可见区域内
+  const isInView = elBottom > container.scrollTop && elTop < container.scrollTop + container.clientHeight
+  
+  if (isInView) {
+    // 目标在视口中，保持高亮
+    activeId.value = clickedId
+  }
+  
+  clickedId = null
 }
 
 // 基于滚动位置检测当前可见区域的元素
@@ -340,6 +366,22 @@ const updateActiveFromScroll = () => {
   if (!contentRef.value) return
   
   const container = contentRef.value
+  
+  // 如果有点击目标在锁定中，检查目标是否在视口中
+  if (isClickScrolling && clickedId) {
+    const targetEl = document.getElementById(clickedId)
+    if (targetEl) {
+      const elTop = targetEl.offsetTop - container.offsetTop
+      const elBottom = elTop + targetEl.offsetHeight
+      const isInView = elBottom > container.scrollTop && elTop < container.scrollTop + container.clientHeight
+      
+      if (isInView) {
+        activeId.value = clickedId
+        return
+      }
+    }
+  }
+  
   const containerTop = container.scrollTop
   const containerHeight = container.clientHeight
   const scrollHeight = container.scrollHeight
